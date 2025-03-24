@@ -4,7 +4,8 @@ import time
 import struct
 
 def send_data_to_server(data_to_send):
-    HOST = '172.20.10.4'
+    #HOST = '172.20.10.4'
+    HOST = '127.0.0.1'
     PORT = 5001
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -34,5 +35,9 @@ if __name__ == "__main__":
         send_data_to_server(frame_bytes)
     else:
         print("Failed to encode frame")
+
+    send_data_to_server("ACCELEROMETER: Hello from ACCELEROMETER!")
+    send_data_to_server("MICROPHONE: 69")
+
     
     time.sleep(1)
