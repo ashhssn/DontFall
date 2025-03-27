@@ -36,25 +36,43 @@ st.markdown(
 
 while True:
     # Fetch all data with timestamps from the database
+    
     accelerometer_data = fetch_all_data_with_timestamps('accelerometer')
     camera_data = fetch_all_data_with_timestamps('camera')
     microphone_data = fetch_all_data_with_timestamps('microphone')
+    acc_len = len(accelerometer_data)
+    mic_len = len(microphone_data)
 
-    combined_data = []
+    if acc_len >= mic_len:
+        combined_data = []
+        for acc_entry in accelerometer_data:
+            acc_id, acc_content, acc_timestamp = acc_entry
+            acc_time = datetime.strptime(acc_timestamp, '%Y-%m-%d %H:%M:%S')
 
-    for acc_entry in accelerometer_data:
-        acc_id, acc_content, acc_timestamp = acc_entry
-        acc_time = datetime.strptime(acc_timestamp, '%Y-%m-%d %H:%M:%S')
+            # Find the latest camera entry within 2 seconds of the accelerometer timestamp
+            cam_entry = next((cam for cam in camera_data if abs(datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
+            cam_content = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_entry[1])}" width="100"/>' if cam_entry else None
 
-        # Find the latest camera entry within 2 seconds of the accelerometer timestamp
-        cam_entry = next((cam for cam in camera_data if abs(datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
-        cam_content = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_entry[1])}" width="100"/>' if cam_entry else None
+            # Find the latest microphone entry within 2 seconds of the accelerometer timestamp
+            mic_entry = next((mic for mic in microphone_data if abs(datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
+            mic_content = mic_entry[1] if mic_entry else None
 
-        # Find the latest microphone entry within 2 seconds of the accelerometer timestamp
-        mic_entry = next((mic for mic in microphone_data if abs(datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
-        mic_content = mic_entry[1] if mic_entry else None
+            combined_data.append((acc_id, acc_content, mic_content, cam_content, acc_timestamp))
+    else:
+        combined_data = []
+        for mic_entry in microphone_data:
+            mic_id, mic_content, mic_timestamp = mic_entry
+            mic_time = datetime.strptime(mic_timestamp, '%Y-%m-%d %H:%M:%S')
 
-        combined_data.append((acc_id, acc_content, mic_content, cam_content, acc_timestamp))
+            # Find the latest camera entry within 2 seconds of the microphone timestamp
+            cam_entry = next((cam for cam in camera_data if abs(datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') - mic_time) <= timedelta(seconds=2)), None)
+            cam_content = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_entry[1])}" width="100"/>' if cam_entry else None
+
+            # Find the latest accelerometer entry within 2 seconds of the microphone timestamp
+            acc_entry = next((acc for acc in accelerometer_data if abs(datetime.strptime(acc[2], '%Y-%m-%d %H:%M:%S') - mic_time) <= timedelta(seconds=2)), None)
+            acc_content = acc_entry[1] if acc_entry else None
+
+            combined_data.append((mic_id, acc_content, mic_content, cam_content, mic_timestamp))
 
     df_combined = pd.DataFrame(combined_data, columns=["ID", "Accelerometer Data", "Microphone Data", "Camera Data", "Timestamp"])
     combined_placeholder.markdown(df_combined.to_html(escape=False, index=False), unsafe_allow_html=True)
