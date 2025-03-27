@@ -1,8 +1,11 @@
 import socket
+import subprocess
 import struct
 import numpy as np
 import cv2
 import sys
+from database.database import init_db, insert_data
+
 
 def recvall(conn, n):
     data = b''
@@ -17,6 +20,11 @@ def run_server():
     HOST = '0.0.0.0'
     PORT = 5001
     MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB max valid image size
+
+    init_db()
+
+    # Start the Streamlit dashboard
+    subprocess.Popen(["streamlit", "run", "dashboard.py"])
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         server_socket.bind((HOST, PORT))
@@ -65,6 +73,7 @@ def run_server():
                             img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
                             if img is not None:
                                 cv2.imwrite("received_frame.jpg", img)
+                                insert_data("camera", data)
                                 print("Image saved as received_frame.jpg")
                             else:
                                 print("Failed to decode image from received data.")
@@ -76,10 +85,22 @@ def run_server():
                             try:
                                 message = text_data.decode('utf-8')
                                 print(f"Received message: {message}")
+                                if message.startswith("ACCELEROMETER:"):
+                                    insert_data("accelerometer", message[len("ACCELEROMETER:"):])
+                                elif message.startswith("MICROPHONE:"):
+                                    insert_data("microphone", float(message[len("MICROPHONE:"):]))
+                                else:
+                                    print("Unknown data source.")
                             except UnicodeDecodeError:
                                 print("Failed to decode text data as UTF-8.")
+                            except ValueError:
+                                print("Failed to convert microphone data to float.")
         except KeyboardInterrupt:
             print("Server shutting down...")
 
 if __name__ == "__main__":
     run_server()
+
+
+
+
