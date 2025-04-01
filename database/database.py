@@ -67,7 +67,7 @@ def fetch_all_data_with_timestamps(table):
     conn = sqlite3.connect('data.db')
     c = conn.cursor()
     c.execute(f'''
-        SELECT id, content, timestamp FROM {table} ORDER BY timestamp DESC LIMIT 10
+        SELECT id, content, timestamp FROM {table} ORDER BY timestamp DESC 
     ''')
     result = c.fetchall()
     conn.close()

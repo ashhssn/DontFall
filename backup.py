@@ -34,9 +34,6 @@
 #     unsafe_allow_html=True
 # )
 
-# # Initialize a persistent list to store combined entries
-# all_combined_data = []
-
 # while True:
 #     # Fetch all data with timestamps from the database
 #     accelerometer_data = fetch_all_data_with_timestamps('accelerometer')
@@ -45,71 +42,21 @@
 
 #     combined_data = []
 
-#     # Get the latest entries from accelerometer and microphone tables
-#     latest_accelerometer_entry = accelerometer_data[0] if accelerometer_data else None
-#     latest_microphone_entry = microphone_data[0] if microphone_data else None
+#     for acc_entry in accelerometer_data:
+#         acc_id, acc_content, acc_timestamp = acc_entry
+#         acc_time = datetime.strptime(acc_timestamp, '%Y-%m-%d %H:%M:%S')
 
-#     # Determine the primary table based on the latest timestamps
-#     if latest_accelerometer_entry and latest_microphone_entry:
-#         acc_time = datetime.strptime(latest_accelerometer_entry[2], '%Y-%m-%d %H:%M:%S')
-#         mic_time = datetime.strptime(latest_microphone_entry[2], '%Y-%m-%d %H:%M:%S')
-
-#         # Compare timestamps
-#         if abs((mic_time - acc_time).total_seconds()) <= 1:
-#             # If timestamps are within 1 second, take the earliest one
-#             if mic_time < acc_time:
-#                 primary_data = microphone_data
-#                 primary_label = "Microphone"
-#             else:
-#                 primary_data = accelerometer_data
-#                 primary_label = "Accelerometer"
-#         else:
-#             # Otherwise, take the latest one
-#             if mic_time > acc_time:
-#                 primary_data = microphone_data
-#                 primary_label = "Microphone"
-#             else:
-#                 primary_data = accelerometer_data
-#                 primary_label = "Accelerometer"
-#     elif latest_accelerometer_entry:
-#         primary_data = accelerometer_data
-#         primary_label = "Accelerometer"
-#     elif latest_microphone_entry:
-#         primary_data = microphone_data
-#         primary_label = "Microphone"
-#     else:
-#         primary_data = []
-#         primary_label = None
-
-#     # Iterate through the primary table
-#     for primary_entry in primary_data:
-#         primary_id, primary_content, primary_timestamp = primary_entry
-#         primary_time = datetime.strptime(primary_timestamp, '%Y-%m-%d %H:%M:%S')
-
-#         # Find the camera entries within 1 second prior and 3 seconds after the primary timestamp
-#         cam_entry = next((cam for cam in camera_data if primary_time - timedelta(seconds=2) <= datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') <= primary_time + timedelta(seconds=15)), None)
+#         # Find the latest camera entry within 2 seconds of the accelerometer timestamp
+#         cam_entry = next((cam for cam in camera_data if abs(datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
 #         cam_content = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_entry[1])}" width="100"/>' if cam_entry else None
 
-#         # Find the entries from the secondary table (opposite of the primary table) within 1 second prior and 3 seconds after
-#         if primary_label == "Accelerometer":
-#             mic_entry = next((mic for mic in microphone_data if primary_time - timedelta(seconds=2) <= datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') <= primary_time + timedelta(seconds=15)), None)
-#             mic_content = mic_entry[1] if mic_entry else None
-#             acc_content = primary_content
-#         else:
-#             acc_entry = next((acc for acc in accelerometer_data if primary_time - timedelta(seconds=2) <= datetime.strptime(acc[2], '%Y-%m-%d %H:%M:%S') <= primary_time + timedelta(seconds=15)), None)
-#             acc_content = acc_entry[1] if acc_entry else None
-#             mic_content = primary_content
+#         # Find the latest microphone entry within 2 seconds of the accelerometer timestamp
+#         mic_entry = next((mic for mic in microphone_data if abs(datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') - acc_time) <= timedelta(seconds=2)), None)
+#         mic_content = mic_entry[1] if mic_entry else None
 
-#         # Append the combined data
-#         combined_entry = (acc_content, mic_content, cam_content, primary_timestamp)
-#         if combined_entry not in all_combined_data:  # Avoid duplicates
-#             all_combined_data.append(combined_entry)
+#         combined_data.append((acc_id, acc_content, mic_content, cam_content, acc_timestamp))
 
-#     # Sort the combined data by timestamp in descending order
-#     all_combined_data.sort(key=lambda x: datetime.strptime(x[3], '%Y-%m-%d %H:%M:%S'), reverse=True)
-
-#     # Create a DataFrame for the combined data
-#     df_combined = pd.DataFrame(all_combined_data, columns=["Accelerometer Data", "Microphone Data", "Camera Data", "Timestamp"])
+#     df_combined = pd.DataFrame(combined_data, columns=["ID", "Accelerometer Data", "Microphone Data", "Camera Data", "Timestamp"])
 #     combined_placeholder.markdown(df_combined.to_html(escape=False, index=False), unsafe_allow_html=True)
 
 #     # Display Accelerometer Data
@@ -194,33 +141,46 @@ while True:
 
     combined_data = []
 
-        # Iterate through the camera table
-    for cam_entry in camera_data:
-        cam_id, cam_content, cam_timestamp = cam_entry
-        cam_time = datetime.strptime(cam_timestamp, '%Y-%m-%d %H:%M:%S')
+    # Determine the primary table to iterate over
+    if len(microphone_data) > len(accelerometer_data):
+        primary_data = microphone_data
+        primary_label = "Microphone"
+    else:
+        primary_data = accelerometer_data
+        primary_label = "Accelerometer"
 
-        # Find the latest accelerometer entry within the time window
-        acc_entry = next((acc for acc in accelerometer_data if cam_time - timedelta(seconds=20) <= datetime.strptime(acc[2], '%Y-%m-%d %H:%M:%S') <= cam_time + timedelta(seconds=5)), None)
-        acc_content = acc_entry[1] if acc_entry else None
+    # Iterate through the primary table
+    for primary_entry in primary_data:
+        primary_id, primary_content, primary_timestamp = primary_entry
+        primary_time = datetime.strptime(primary_timestamp, '%Y-%m-%d %H:%M:%S')
 
-        # Find the latest microphone entry within the time window
-        mic_entry = next((mic for mic in microphone_data if cam_time - timedelta(seconds=20) <= datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') <= cam_time + timedelta(seconds=5)), None)
-        mic_content = mic_entry[1] if mic_entry else None
+        # Find the latest camera entry within 2 seconds of the primary timestamp
+        cam_entry = next((cam for cam in camera_data if abs(datetime.strptime(cam[2], '%Y-%m-%d %H:%M:%S') - primary_time) <= timedelta(seconds=2)), None)
+        cam_content = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_entry[1])}" width="100"/>' if cam_entry else None
 
-        # Convert the camera content to base64
-        cam_content_base64 = f'<img src="data:image/jpeg;base64,{image_to_base64(cam_content)}" width="100"/>' if cam_content else None
+        # Find the latest entry from the secondary table (opposite of the primary table) within 2 seconds
+        if primary_label == "Accelerometer":
+            mic_entry = next((mic for mic in microphone_data if abs(datetime.strptime(mic[2], '%Y-%m-%d %H:%M:%S') - primary_time) <= timedelta(seconds=2)), None)
+            mic_content = mic_entry[1] if mic_entry else None
+            acc_content = primary_content
+        else:
+            acc_entry = next((acc for acc in accelerometer_data if abs(datetime.strptime(acc[2], '%Y-%m-%d %H:%M:%S') - primary_time) <= timedelta(seconds=2)), None)
+            acc_content = acc_entry[1] if acc_entry else None
+            mic_content = primary_content
 
-        # Only append the combined data if the camera image exists
-        if cam_content_base64:
-            combined_entry = (acc_content, mic_content, cam_content_base64, cam_timestamp)
-            if combined_entry not in all_combined_data:  # Avoid duplicates
-                all_combined_data.append(combined_entry)
+        # Append the combined data
+        combined_data.append((primary_id, acc_content, mic_content, cam_content, primary_timestamp))
+
+    # Add new combined entries to the persistent list, avoiding duplicates
+    for entry in combined_data:
+        if entry not in all_combined_data:
+            all_combined_data.append(entry)
 
     # Sort the combined data by timestamp in descending order
-    all_combined_data.sort(key=lambda x: datetime.strptime(x[3], '%Y-%m-%d %H:%M:%S'), reverse=True)
+    all_combined_data.sort(key=lambda x: datetime.strptime(x[4], '%Y-%m-%d %H:%M:%S'), reverse=True)
 
     # Create a DataFrame for the combined data
-    df_combined = pd.DataFrame(all_combined_data, columns=["Accelerometer Data", "Microphone Data", "Camera Data", "Timestamp"])
+    df_combined = pd.DataFrame(all_combined_data, columns=["ID", "Accelerometer Data", "Microphone Data", "Camera Data", "Timestamp"])
     combined_placeholder.markdown(df_combined.to_html(escape=False, index=False), unsafe_allow_html=True)
 
     # Display Accelerometer Data
@@ -257,4 +217,3 @@ while True:
 
     # Refresh every 2 seconds
     time.sleep(2)
-
