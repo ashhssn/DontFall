@@ -1,9 +1,14 @@
 import sqlite3
 from datetime import datetime
 import pytz
+import os
+
+# Always point to the same data.db file in the root project folder
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data.db'))
+print("Using database at:", DB_PATH)
 
 def init_db():
-    conn = sqlite3.connect('data.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS accelerometer (
@@ -22,7 +27,7 @@ def init_db():
     c.execute('''
         CREATE TABLE IF NOT EXISTS microphone (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            content REAL,
+            content TEXT,  -- Changed to TEXT to store emojis + confidence string
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -34,7 +39,7 @@ def get_singapore_time():
     return datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
 
 def insert_data(table, content):
-    conn = sqlite3.connect('data.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     timestamp = get_singapore_time()
     c.execute(f'''
@@ -44,7 +49,7 @@ def insert_data(table, content):
     conn.close()
 
 def fetch_latest_data(table):
-    conn = sqlite3.connect('data.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'''
         SELECT content FROM {table} ORDER BY timestamp DESC LIMIT 1
@@ -54,7 +59,7 @@ def fetch_latest_data(table):
     return result[0] if result else None
 
 def fetch_all_data(table):
-    conn = sqlite3.connect('data.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'''
         SELECT * FROM {table} ORDER BY timestamp DESC LIMIT 10
@@ -64,7 +69,7 @@ def fetch_all_data(table):
     return result
 
 def fetch_all_data_with_timestamps(table):
-    conn = sqlite3.connect('data.db')
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute(f'''
         SELECT id, content, timestamp FROM {table} ORDER BY timestamp DESC 
