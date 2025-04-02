@@ -85,8 +85,9 @@ def run_server():
                             try:
                                 message = text_data.decode('utf-8')
                                 print(f"Received message: {message}")
-                                if message.startswith("ACCELEROMETER:"):
-                                    insert_data("accelerometer", message[len("ACCELEROMETER:"):])
+                                
+                                if "FALL_DETECTED" in message:
+                                    insert_data("accelerometer", message[len("FALL_DETECTED: Accelerometer Data:"):])
                                 elif message.startswith("MICROPHONE:"):
                                     insert_data("microphone", float(message[len("MICROPHONE:"):]))
                                 else:
@@ -100,6 +101,11 @@ def run_server():
 
 if __name__ == "__main__":
     run_server()
+
+
+
+
+
 
 
 
