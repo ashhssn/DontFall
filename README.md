@@ -9,7 +9,7 @@ DontFall is an Edge Computing and Analytics project. The project aims to run rea
 In this setup, all edge devices (2× Raspberry Pi 400 and 1× M5Stick C Plus) communicate over a shared mobile hotspot using Python sockets instead of MQTT. The choice of sockets allows for direct peer-to-peer TCP communication without needing a broker, which is ideal in a local intranet environment.
 
 **Why Python Sockets?**
-* Low Latency: Direct TCP connections reduce message overhead and respo**nse time.
+* Low Latency: Direct TCP connections reduce message overhead and response time.
 
 * No Broker Needed: Simplifies architecture and eliminates single points of failure.
 
