@@ -4,6 +4,22 @@ DontFall is an Edge Computing and Analytics project. The project aims to run rea
 
 ![Architecture Diagram](assets/image.png)
 
+## Peer-to-Peer (P2P) Communication
+
+In this setup, all edge devices (2× Raspberry Pi 400 and 1× M5Stick C Plus) communicate over a shared mobile hotspot using Python sockets instead of MQTT. The choice of sockets allows for direct peer-to-peer TCP communication without needing a broker, which is ideal in a local intranet environment.
+
+**Why Python Sockets?**
+* Low Latency: Direct TCP connections reduce message overhead and respo**nse time.
+
+* No Broker Needed: Simplifies architecture and eliminates single points of failure.
+
+* Custom Protocols: Allows full control over data format, flow, and error handling—great for real-time analytics.
+
+* Lightweight: Minimal resource usage, perfect for constrained edge devices.
+
+In contrast, MQTT—though excellent for cloud-connected IoT—is less efficient in this closed, local setup due to its reliance on a central broker and added protocol complexity.
+
+
 ## Installation
 
 Clone the repository and navigate to the project directory. Install requirements using pip:
